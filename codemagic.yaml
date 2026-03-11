@@ -1,0 +1,48 @@
+# Codemagic 壳仓库 (build-carrier) 配置文件模板
+# 此文件应放在 build-carrier 仓库中，不提交到 metagptx-backend
+# 环境变量 CODE_URL / CHAT_ID / BUILD_TARGET 每次构建通过 API 动态注入
+
+workflows:
+  android-build:
+    name: Android Build
+    max_build_duration: 30
+    instance_type: mac_mini_m2
+    environment:
+      vars:
+        CODE_URL: ""
+        APP_NAME: ""
+        CHAT_ID: ""
+        BUILD_TARGET: "apk"
+      node: 18
+      java: 17
+    scripts:
+      - name: Download and extract source
+        script: |
+          echo "Downloading source from COS..."
+          curl -sL -f "$CODE_URL" -o /tmp/source.zip
+          unzip -o /tmp/source.zip -d $CM_BUILD_DIR
+          echo "Source extracted to $CM_BUILD_DIR"
+
+      - name: Install dependencies
+        script: |
+          cd $CM_BUILD_DIR
+          npm install -g pnpm
+          pnpm install --frozen-lockfile || pnpm install
+
+      - name: Expo prebuild
+        script: |
+          cd $CM_BUILD_DIR
+          npx expo prebuild --platform android --no-install
+
+      - name: Build APK
+        script: |
+          cd $CM_BUILD_DIR/android
+          if [ "$BUILD_TARGET" = "aab" ]; then
+            ./gradlew bundleRelease
+          else
+            ./gradlew assembleRelease
+          fi
+
+    artifacts:
+      - $CM_BUILD_DIR/android/app/build/outputs/**/*.apk
+      - $CM_BUILD_DIR/android/app/build/outputs/**/*.aab
