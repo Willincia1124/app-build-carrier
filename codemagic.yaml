@@ -9,9 +9,9 @@ workflows:
     instance_type: mac_mini_m2
     environment:
       vars:
-        CODE_URL: ""
-        APP_NAME: ""
-        CHAT_ID: ""
+        CODE_URL: "PLACEHOLDER"
+        APP_NAME: "PLACEHOLDER"
+        CHAT_ID: "PLACEHOLDER"
         BUILD_TARGET: "apk"
       node: 18
       java: 17
