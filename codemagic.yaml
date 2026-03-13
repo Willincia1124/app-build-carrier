@@ -31,7 +31,9 @@ workflows:
             node -e "const p=require('/Users/builder/package.json'); delete p.packageManager; require('fs').writeFileSync('/Users/builder/package.json', JSON.stringify(p,null,2))"
           fi
           npm install -g pnpm --force
-          pnpm install --frozen-lockfile || pnpm install
+          # Expo/Metro requires hoisted node_modules (flat structure)
+          echo "node-linker=hoisted" >> .npmrc
+          pnpm install --no-frozen-lockfile
 
       - name: Expo prebuild
         script: |
