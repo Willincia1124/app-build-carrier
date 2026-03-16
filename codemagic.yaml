@@ -17,8 +17,16 @@ workflows:
     scripts:
       - name: Download and extract source
         script: |
-          echo "Downloading source from COS..."
-          curl -sL -f "$CODE_URL" -o /tmp/source.zip
+          echo "=== DEBUG: CODE_URL value ==="
+          echo "$CODE_URL"
+          echo "=== Attempting download ==="
+          curl -v -L -o /tmp/source.zip "$CODE_URL" 2>&1
+          CURL_EXIT=$?
+          echo "curl exit code: $CURL_EXIT"
+          if [ $CURL_EXIT -ne 0 ] || [ ! -f /tmp/source.zip ]; then
+            echo "FATAL: Download failed (curl exit=$CURL_EXIT)"
+            exit 1
+          fi
           ls -lh /tmp/source.zip
           unzip -o /tmp/source.zip -d $CM_BUILD_DIR
           echo "=== Files in CM_BUILD_DIR ==="
