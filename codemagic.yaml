@@ -13,7 +13,7 @@ workflows:
         APP_NAME: "PLACEHOLDER"
         CHAT_ID: "PLACEHOLDER"
         BUILD_TARGET: "apk"
-      node: 18
+      node: 20
       java: 17
     scripts:
       - name: Download and extract source
