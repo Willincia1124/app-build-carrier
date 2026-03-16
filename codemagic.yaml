@@ -19,9 +19,22 @@ workflows:
       - name: Download and extract source
         script: |
           echo "Downloading source from COS..."
+          echo "CODE_URL=$CODE_URL"
           curl -sL -f "$CODE_URL" -o /tmp/source.zip
+          echo "Download exit code: $?"
+          echo "Zip file size: $(wc -c < /tmp/source.zip) bytes"
           unzip -o /tmp/source.zip -d $CM_BUILD_DIR
-          echo "Source extracted to $CM_BUILD_DIR"
+          echo "=== Files in CM_BUILD_DIR ==="
+          ls -la $CM_BUILD_DIR
+          echo "=== Checking package.json ==="
+          if [ -f "$CM_BUILD_DIR/package.json" ]; then
+            echo "package.json found!"
+            head -5 $CM_BUILD_DIR/package.json
+          else
+            echo "ERROR: package.json NOT FOUND in $CM_BUILD_DIR"
+            echo "=== Listing all files recursively (depth 2) ==="
+            find $CM_BUILD_DIR -maxdepth 2 -type f | head -30
+          fi
 
       - name: Install dependencies
         script: |
@@ -38,7 +51,8 @@ workflows:
       - name: Expo prebuild
         script: |
           cd $CM_BUILD_DIR
-          npx expo prebuild --platform android --no-install
+          # Use locally installed expo via pnpm instead of npx (which downloads latest)
+          pnpm exec expo prebuild --platform android --no-install
 
       - name: Build APK
         script: |
