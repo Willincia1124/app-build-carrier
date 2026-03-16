@@ -1,4 +1,4 @@
-# Codemagic 壳仓库 (build-carrier) 配置文件模板
+# Codemagic 壳仓库 (build-carrier) 配置文件
 # 环境变量 CODE_URL / CHAT_ID / BUILD_TARGET 每次构建通过 API 动态注入
 
 workflows:
@@ -17,30 +17,17 @@ workflows:
     scripts:
       - name: Download and extract source
         script: |
-          echo "=== DEBUG: CODE_URL value ==="
-          echo "$CODE_URL"
-          echo "=== Attempting download ==="
-          curl -v -L -o /tmp/source.zip "$CODE_URL" 2>&1
-          CURL_EXIT=$?
-          echo "curl exit code: $CURL_EXIT"
-          if [ $CURL_EXIT -ne 0 ] || [ ! -f /tmp/source.zip ]; then
-            echo "FATAL: Download failed (curl exit=$CURL_EXIT)"
-            exit 1
-          fi
+          echo "Downloading source..."
+          curl -fSL "$CODE_URL" -o /tmp/source.zip
           ls -lh /tmp/source.zip
           unzip -o /tmp/source.zip -d $CM_BUILD_DIR
-          echo "=== Files in CM_BUILD_DIR ==="
-          ls -la $CM_BUILD_DIR/
-          test -f "$CM_BUILD_DIR/package.json" && echo "package.json OK" || { echo "FATAL: package.json missing"; exit 1; }
+          test -f "$CM_BUILD_DIR/package.json" || { echo "FATAL: package.json missing"; exit 1; }
+          echo "Source ready."
 
       - name: Install dependencies
         script: |
           cd $CM_BUILD_DIR
-          echo "Node: $(node -v), npm: $(npm -v)"
           npm install
-          echo "=== node_modules/.bin contents ==="
-          ls $CM_BUILD_DIR/node_modules/.bin/ | head -20
-          test -f "$CM_BUILD_DIR/node_modules/.bin/expo" && echo "expo binary OK" || { echo "FATAL: expo binary missing"; exit 1; }
 
       - name: Expo prebuild
         script: |
