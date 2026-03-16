@@ -1,5 +1,4 @@
 # Codemagic 壳仓库 (build-carrier) 配置文件模板
-# 此文件应放在 build-carrier 仓库中，不提交到 metagptx-backend
 # 环境变量 CODE_URL / CHAT_ID / BUILD_TARGET 每次构建通过 API 动态注入
 
 workflows:
@@ -19,34 +18,21 @@ workflows:
       - name: Download and extract source
         script: |
           echo "Downloading source from COS..."
-          echo "CODE_URL=$CODE_URL"
           curl -sL -f "$CODE_URL" -o /tmp/source.zip
-          echo "Download exit code: $?"
-          echo "Zip file size: $(wc -c < /tmp/source.zip) bytes"
+          ls -lh /tmp/source.zip
           unzip -o /tmp/source.zip -d $CM_BUILD_DIR
           echo "=== Files in CM_BUILD_DIR ==="
-          ls -la $CM_BUILD_DIR
-          echo "=== Checking package.json ==="
-          if [ -f "$CM_BUILD_DIR/package.json" ]; then
-            echo "package.json found!"
-            head -5 $CM_BUILD_DIR/package.json
-          else
-            echo "ERROR: package.json NOT FOUND in $CM_BUILD_DIR"
-            echo "=== Listing all files recursively (depth 2) ==="
-            find $CM_BUILD_DIR -maxdepth 2 -type f | head -30
-          fi
+          ls -la $CM_BUILD_DIR/
+          test -f "$CM_BUILD_DIR/package.json" && echo "package.json OK" || { echo "FATAL: package.json missing"; exit 1; }
 
       - name: Install dependencies
         script: |
           cd $CM_BUILD_DIR
-          # Remove builder-level packageManager constraint that blocks pnpm
-          if [ -f /Users/builder/package.json ]; then
-            node -e "const p=require('/Users/builder/package.json'); delete p.packageManager; require('fs').writeFileSync('/Users/builder/package.json', JSON.stringify(p,null,2))"
-          fi
-          npm install -g pnpm --force
-          # Expo/Metro requires hoisted node_modules (flat structure)
-          echo "node-linker=hoisted" >> .npmrc
-          pnpm install --no-frozen-lockfile
+          echo "Node: $(node -v), npm: $(npm -v)"
+          npm install
+          echo "=== node_modules/.bin contents ==="
+          ls $CM_BUILD_DIR/node_modules/.bin/ | head -20
+          test -f "$CM_BUILD_DIR/node_modules/.bin/expo" && echo "expo binary OK" || { echo "FATAL: expo binary missing"; exit 1; }
 
       - name: Expo prebuild
         script: |
