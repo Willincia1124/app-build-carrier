@@ -51,8 +51,7 @@ workflows:
       - name: Expo prebuild
         script: |
           cd $CM_BUILD_DIR
-          # Use locally installed expo via pnpm instead of npx (which downloads latest)
-          pnpm exec expo prebuild --platform android --no-install
+          ./node_modules/.bin/expo prebuild --platform android --no-install
 
       - name: Build APK
         script: |
