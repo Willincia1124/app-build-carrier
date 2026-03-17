@@ -29,6 +29,31 @@ workflows:
           cd $CM_BUILD_DIR
           npm install
 
+      - name: Prepare Expo config
+        script: |
+          cd $CM_BUILD_DIR
+          node -e "
+          const fs = require('fs');
+          const raw = fs.readFileSync('app.json', 'utf8');
+          const config = JSON.parse(raw);
+          const expo = config.expo || config;
+          // Ensure android.package exists for prebuild
+          if (!expo.android) expo.android = {};
+          if (!expo.android.package) {
+            const slug = (expo.slug || 'app').replace(/[^a-zA-Z0-9]/g, '');
+            expo.android.package = 'com.mgx.' + slug.toLowerCase();
+            console.log('Injected android.package:', expo.android.package);
+          } else {
+            console.log('android.package already set:', expo.android.package);
+          }
+          // Ensure ios.bundleIdentifier for future iOS support
+          if (!expo.ios) expo.ios = {};
+          if (!expo.ios.bundleIdentifier) {
+            expo.ios.bundleIdentifier = expo.android.package;
+          }
+          fs.writeFileSync('app.json', JSON.stringify(config, null, 2));
+          "
+
       - name: Expo prebuild
         script: |
           cd $CM_BUILD_DIR
