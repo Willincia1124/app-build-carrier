@@ -86,28 +86,36 @@ workflows:
             ERROR_MSG="Build failed"
             ARTIFACT_SIZE=0
 
-            APK=$(find $CM_BUILD_DIR/android -name "*.apk" -path "*/release/*" 2>/dev/null | head -1)
+            if [ "$BUILD_TARGET" = "aab" ]; then
+              ARTIFACT=$(find $CM_BUILD_DIR/android -name "*.aab" -path "*/release/*" 2>/dev/null | head -1)
+              ARTIFACT_CONTENT_TYPE="application/octet-stream"
+              ARTIFACT_LABEL="AAB"
+            else
+              ARTIFACT=$(find $CM_BUILD_DIR/android -name "*.apk" -path "*/release/*" 2>/dev/null | head -1)
+              ARTIFACT_CONTENT_TYPE="application/vnd.android.package-archive"
+              ARTIFACT_LABEL="APK"
+            fi
 
-            if [ -n "$APK" ] && [ -f "$APK" ]; then
-              ARTIFACT_SIZE=$(stat -f%z "$APK" 2>/dev/null || stat -c%s "$APK" 2>/dev/null || echo 0)
-              echo "Uploading APK ($ARTIFACT_SIZE bytes): $APK"
+            if [ -n "$ARTIFACT" ] && [ -f "$ARTIFACT" ]; then
+              ARTIFACT_SIZE=$(stat -f%z "$ARTIFACT" 2>/dev/null || stat -c%s "$ARTIFACT" 2>/dev/null || echo 0)
+              echo "Uploading $ARTIFACT_LABEL ($ARTIFACT_SIZE bytes): $ARTIFACT"
 
               HTTP_CODE=$(curl -s -o /dev/null -w "%{http_code}" \
                 -X PUT \
-                -H "Content-Type: application/vnd.android.package-archive" \
-                -T "$APK" \
+                -H "Content-Type: $ARTIFACT_CONTENT_TYPE" \
+                -T "$ARTIFACT" \
                 "$ARTIFACT_UPLOAD_URL")
 
               if [ "$HTTP_CODE" = "200" ]; then
                 STATUS="success"
                 ERROR_MSG=""
-                echo "APK uploaded successfully"
+                echo "$ARTIFACT_LABEL uploaded successfully"
               else
-                ERROR_MSG="APK upload to COS failed with HTTP $HTTP_CODE"
+                ERROR_MSG="$ARTIFACT_LABEL upload to COS failed with HTTP $HTTP_CODE"
                 echo "$ERROR_MSG"
               fi
             else
-              ERROR_MSG="No release APK found after build"
+              ERROR_MSG="No release $ARTIFACT_LABEL found after build"
               echo "$ERROR_MSG"
             fi
 
